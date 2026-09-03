@@ -1,0 +1,43 @@
+# Self-Healing Data Pipeline Agent — requirements.txt
+# Python 3.11 or 3.12 recommended (LangGraph requires >=3.10)
+#
+# Versions use compatible-release ranges (>=X,<Y) rather than exact patch
+# pins — LangGraph/LangChain ship weekly point releases, and pinning an
+# exact patch risks pinning to one that's already been superseded or yanked.
+# Run `pip freeze > requirements-lock.txt` once your venv works, and commit
+# THAT as the reproducible record for your README/DECISIONS.md.
+
+# --- Agent orchestration ---
+langgraph>=1.2,<2.0                    # current major as of Aug 2026 (1.2.11)
+langgraph-checkpoint-postgres>=2.0,<4.0
+
+# --- Postgres driver: psycopg v3, NOT psycopg2 ---
+# langgraph-checkpoint-postgres requires the psycopg (v3) driver, not psycopg2.
+# Use the SAME driver for your SQL tool too (via SQLAlchemy's postgresql+psycopg://
+# dialect) so you're not installing two different Postgres drivers side by side.
+psycopg[binary]>=3.1,<4.0
+
+# --- SQL tool / general DB access ---
+sqlalchemy>=2.0,<3.0
+
+# --- LLM ---
+langchain-google-genai>=4.2,<5.0       # current major as of Aug 2026 (4.2.7); pulls google-genai + langchain-core automatically
+
+# --- Observability ---
+# Langfuse SDK v4 (OTel-based) is current as of Aug 2026 — v2's legacy ingestion
+# API is being sunset on Langfuse Cloud Nov 16 2026. If your RAG project used
+# v2-style `from langfuse.decorators import observe`, that code will NOT work
+# unchanged here — v4's API is different. Start this project on v4 directly.
+langfuse>=4.14,<5.0
+
+# --- Human-in-the-loop approval UI ---
+fastapi[standard]>=0.128,<1.0
+uvicorn[standard]>=0.30,<1.0
+
+# --- Core / utility ---
+pydantic>=2.7,<3.0                     # LangGraph/LangChain are pydantic v2-only — this is the most common conflict source if anything pulls v1
+python-dotenv>=1.0,<2.0
+requests>=2.31,<3.0                    # Airflow REST API calls
+
+# --- Testing (Phase 7) ---
+pytest>=8.0,<9.0

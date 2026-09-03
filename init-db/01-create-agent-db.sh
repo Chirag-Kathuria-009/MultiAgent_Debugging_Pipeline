@@ -11,4 +11,9 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     CREATE USER "${AGENT_DB_USER}" WITH PASSWORD '${AGENT_DB_PASSWORD}';
     GRANT ALL PRIVILEGES ON DATABASE "${AGENT_DB_NAME}" TO "${AGENT_DB_USER}";
     ALTER DATABASE "${AGENT_DB_NAME}" OWNER TO "${AGENT_DB_USER}";
+
+    -- Postgres grants CONNECT on new databases to PUBLIC by default, so without
+    -- this, agent could open a session to Airflow's database even with no table
+    -- grants there. Close that connect-level boundary explicitly.
+    REVOKE CONNECT ON DATABASE "${POSTGRES_DB}" FROM "${AGENT_DB_USER}";
 EOSQL
