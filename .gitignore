@@ -8,3 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+
+DECISIONS.md
+Self_Healing_Pipeline_Agent_Design.md
+logs/*
