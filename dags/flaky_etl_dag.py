@@ -34,7 +34,7 @@ from airflow import DAG
 from airflow.exceptions import AirflowException
 from airflow.models import Variable
 from airflow.operators.python import PythonOperator
-
+from failure_listener import notify_agent  
 from db_conn import get_db_connection  # confirm this matches the function name in your db_conn.py
 
 
@@ -72,6 +72,9 @@ with DAG(
     schedule=None,
     catchup=False,
     tags=["failure-demo", "upstream-timeout", "self-healing-agent"],
+    default_args={
+        "on_failure_callback": notify_agent,  # Notify the agent on any task failure
+    },
 ) as dag:
 
     call = PythonOperator(

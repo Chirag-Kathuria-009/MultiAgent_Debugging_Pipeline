@@ -9,7 +9,7 @@ from airflow.models import Variable
 from airflow.operators.python import PythonOperator
 from db_conn import get_db_connection
 from airflow.exceptions import AirflowException
-
+from failure_listener import notify_agent
 ## create two task with input variable 
 
 def read_orders_table(**context):
@@ -46,6 +46,9 @@ with DAG(
     start_date=datetime(2026, 1, 1),
     schedule=None,
     catchup=False,
+    default_args={
+        "on_failure_callback": notify_agent,  # Notify the agent on any task failure
+    },
     tags = ["failure_demo","schema_drift","self_healing"],
 ) as dag:
     task1 = PythonOperator(
