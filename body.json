@@ -1,0 +1,1 @@
+﻿{"dag_id":"test","task_id":"t1","execution_date":"2026-01-01T00:00:00","try_number":1,"exception":"fake","run_id":"r1","log_url":"http://example.com/log"}

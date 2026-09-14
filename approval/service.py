@@ -29,7 +29,7 @@ graph_state = {"graph": None, "checkpointer": None }
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize the PostgresSaver for checkpointing
-    checkpointer = PostgresSaver.from_conn_string(DB_URI)
+    checkpointer = PostgresSaver.from_conn_string(DB_URI) # here we are reading checkpoint information from postgres
     checkpointer_start = checkpointer.__enter__()
     checkpointer_start.setup()
     
@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
     graph_state["checkpointer"] = checkpointer
 
     # Build the graph and store it in the global state
-    graph = build_graph(checkpointer)
+    graph = build_graph(checkpointer_start)
     graph_state["graph"] = graph
     
     print(f"Agent service ready. Checkpointer connected to {AGENT_DB_NAME}@localhost:{AGENT_DB_HOST_PORT}")
@@ -65,7 +65,7 @@ def trigger_diagnosis(payload: FailurePayload):
         "agent_log": [],
     }
  
-    result = _state["graph"].invoke(initial_state, config={"configurable": {"thread_id": thread_id}})
+    result = graph_state["graph"].invoke(initial_state, config={"configurable": {"thread_id": thread_id}})
     print(f"Diagnosis graph completed for thread_id={thread_id}")
     return {"status": "completed", "thread_id": thread_id, "final_state": result}
  
@@ -73,5 +73,4 @@ def trigger_diagnosis(payload: FailurePayload):
 @app.get("/health")
 def health():
     return {"status": "ok"}
-    
     

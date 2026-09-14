@@ -12,6 +12,7 @@ the caller (service.py) owns the checkpointer's connection lifecycle.
 
 from langgraph.graph import END, START, StateGraph
 from agents.state import AgentState
+import time 
 
 def triage_node(state: AgentState) -> dict:
     """
@@ -23,6 +24,9 @@ def triage_node(state: AgentState) -> dict:
     return {"triage_category": "unknown", "triage_justification": "placeholder-not-yet-implemented", "agent_log": log}
 
 def investigate_node(state: AgentState) -> dict:
+    print("Working with Investigate node...")
+    #tStimulating delay for demonstration purposes
+    #time.sleep(15)
     log = list(state.get("agent_log", []))
     log.append("[investigate] placeholder — no real investigation yet")
     print(log[-1])
@@ -57,14 +61,22 @@ def build_graph(checkpointer) -> StateGraph:
     Build the LangGraph graph for the self-healing pipeline agent.
     """
     graph = StateGraph(AgentState)
-    
-    graph.add_node("triage_node", triage_node, next_nodes=["investigate_node"])
-    graph.add_node("investigate_node", investigate_node, next_nodes=["remediate_node"])
-    graph.add_node("remediate_node", remediate_node, next_nodes=[route_after_remediate])
-    graph.add_node("report_node", report_node, next_nodes=[END])
-    
-    graph.set_start(START, "triage_node")
-    
+
+    graph.add_node("triage_node", triage_node)
+    graph.add_node("investigate_node", investigate_node)
+    graph.add_node("remediate_node", remediate_node)
+    graph.add_node("report_node", report_node)
+
+    graph.add_edge(START, "triage_node")
+    graph.add_edge("triage_node", "investigate_node")
+    graph.add_edge("investigate_node", "remediate_node")
+    graph.add_conditional_edges(
+        "remediate_node",
+        route_after_remediate,
+        {"report_node": "report_node"},
+    )
+    graph.add_edge("report_node", END)
+
     return graph.compile(checkpointer=checkpointer)
 
 
