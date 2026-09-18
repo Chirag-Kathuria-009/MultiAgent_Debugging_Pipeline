@@ -12,6 +12,7 @@ the caller (service.py) owns the checkpointer's connection lifecycle.
 
 from langgraph.graph import END, START, StateGraph
 from agents.state import AgentState
+from agents.triage_agent import triage_agent
 import time 
 
 def triage_node(state: AgentState) -> dict:
@@ -19,9 +20,14 @@ def triage_node(state: AgentState) -> dict:
     Placeholder triage node for the self-healing pipeline agent.
     """
     log = list(state.get("agent_log", []))
-    log.append(f"[triage] placeholder — received failure: {state.get('failure_context')}")
+    
+    result = triage_agent(state)
+    log.extend(result["agent_log"])
+
+    #log.append(f"[triage] placeholder — received failure: {state.get('failure_context')}")
     print("Recent log entry:", log[-1])
-    return {"triage_category": "unknown", "triage_justification": "placeholder-not-yet-implemented", "agent_log": log}
+    #return {"triage_category": "unknown", "triage_justification": "placeholder-not-yet-implemented", "agent_log": log}
+    return result
 
 def investigate_node(state: AgentState) -> dict:
     print("Working with Investigate node...")
