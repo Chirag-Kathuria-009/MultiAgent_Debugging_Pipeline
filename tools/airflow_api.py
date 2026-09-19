@@ -32,3 +32,42 @@ def get_task_instance_logs(dag_id: str, run_id: str, task_id: str, try_number: i
     except requests.exceptions.RequestException as e:
         print(f"Failed to fetch logs from Airflow API: {e}. Please check if Airflow is running and accessible.")
         return "Log retrieval failed."
+
+def clear_task_instance(dag_id: str, run_id: str, task_id: str) -> str:
+    """
+    Clears the state of a specific task instance in Airflow.
+
+    Args:
+        dag_id (str): The ID of the DAG.
+        run_id (str): The ID of the DAG run.
+        task_id (str): The ID of the task.
+
+    Returns:
+        bool: True if the task instance was cleared successfully, False otherwise.
+    """
+    url = f"{AIRFLOW_BASE_URL}/api/v1/dags/{dag_id}/clearTaskInstances"    
+    
+    payload = {
+        "dry_run": False,
+        "reset_dag_runs": False,
+        "only_failed": True,
+        "include_subdags": False,
+        "include_parentdag": False,
+        "task_ids": [task_id],
+        "dag_run_id": run_id
+    }
+    try:
+            
+        response = requests.post(url, auth=Auth,json=payload, timeout=10)
+        response.raise_for_status()
+            
+        data = response.json()
+        cleared = data.get("task_instances", [])
+            
+        if cleared:
+            return f"cleared {len(cleared)} task instance(s) for {task_id} in run {run_id}"
+        return f"WARNING: clear request succeeded but reported 0 task instances cleared for {task_id} in run {run_id}"
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to clear task instance in Airflow API: {e}. Please check if Airflow is running and accessible.")
+        return "Clear task instance failed."
+     

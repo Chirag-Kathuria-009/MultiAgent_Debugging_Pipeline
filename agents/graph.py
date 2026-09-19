@@ -14,6 +14,7 @@ from langgraph.graph import END, START, StateGraph
 from agents.state import AgentState
 from agents.triage_agent import triage_agent
 from agents.investigate import investigate_agent
+from agents.remediate import remediate_agent
 import time 
 
 def triage_node(state: AgentState) -> dict:
@@ -43,9 +44,11 @@ def investigate_node(state: AgentState) -> dict:
 
 def remediate_node(state: AgentState) -> dict:
     log = list(state.get("agent_log", []))
-    log.append("[remediate] placeholder — no real remediation yet")
+    result = remediate_agent(state)
+    log.extend(result["agent_log"])
+    #log.append("[remediate] placeholder — no real remediation yet")
     print(log[-1])
-    return {"proposed_action": "placeholder", "risk_level": "low", "automated_action_taken": False, "agent_log": log}
+    return result
 
 def report_node(state: AgentState) -> dict:
     log = list(state.get("agent_log", []))
