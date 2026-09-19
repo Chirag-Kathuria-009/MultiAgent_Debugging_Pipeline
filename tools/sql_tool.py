@@ -1,9 +1,9 @@
 from langchain_core.tools import  tool
-from agents.investigate import get_db_connection
 from dotenv import load_dotenv
 import re
 load_dotenv()
-
+import psycopg2
+import os
 
 
 
@@ -14,11 +14,29 @@ FORBIDDEN_KEYWORDS = re.compile(
     re.IGNORECASE,
 )
 
-
+def get_db_connection():
+    conn = psycopg2.connect(
+        host=os.environ.get("AGENT_DB_HOST", "postgres"),
+        port=os.environ.get("AGENT_DB_HOST_PORT", "5442"),
+        dbname=os.environ.get("AGENT_DB_NAME", "pipeline_agent"),
+        user=os.environ.get("INVESTIGATOR_DB_USER", "investigator_ro"),
+        password=os.environ.get("INVESTIGATOR_DB_PASSWORD", "investigator_ro")
+    )
+    
+    conn.readonly = True  # Set the connection to read-only mode
+    return conn
 
 @tool
-
 def run_sql_query(query: str) -> str:
+    
+    """Execute a read-only SQL SELECT query against the pipeline
+    database and return the matching rows. Use this to check real data —
+    row counts, null rates, sample values, or anything else needed to
+    confirm or rule out a hypothesis about the failure. Only SELECT
+    statements are permitted; anything else is rejected before it
+    reaches the database. Results are capped at 20 rows — use your own
+    LIMIT or an aggregate (COUNT, etc.) if you need a summary rather
+    than raw rows."""
     
     if FORBIDDEN_KEYWORDS.search(query):
         return "Error: Forbidden SQL operation detected. Only SELECT queries are allowed."
@@ -47,8 +65,12 @@ def run_sql_query(query: str) -> str:
 
 
 @tool
-
 def list_columns(table_name: str) -> str:
+    """List the column names and data types of a table in the pipeline
+    database. Use this before writing a query against a table you're not
+    already certain about the shape of — faster and safer than guessing
+    column names, and directly useful for spotting schema drift (a
+    column that's missing, renamed, or has an unexpected type)."""
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:

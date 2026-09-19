@@ -13,6 +13,7 @@ the caller (service.py) owns the checkpointer's connection lifecycle.
 from langgraph.graph import END, START, StateGraph
 from agents.state import AgentState
 from agents.triage_agent import triage_agent
+from agents.investigate import investigate_agent
 import time 
 
 def triage_node(state: AgentState) -> dict:
@@ -34,9 +35,11 @@ def investigate_node(state: AgentState) -> dict:
     #tStimulating delay for demonstration purposes
     #time.sleep(15)
     log = list(state.get("agent_log", []))
-    log.append("[investigate] placeholder — no real investigation yet")
+    result = investigate_agent(state)
+    log.extend(result["agent_log"])
+    #log.append("[investigate] placeholder — no real investigation yet")
     print(log[-1])
-    return {"investigation_findings": "placeholder", "agent_log": log}
+    return result
 
 def remediate_node(state: AgentState) -> dict:
     log = list(state.get("agent_log", []))
