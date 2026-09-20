@@ -12,7 +12,7 @@ from tools.airflow_api import clear_task_instance, get_task_instance_logs
 
 load_dotenv()  # Load environment variables from .env file
 
-REMEDIATE_MODEL = os.environ.get("REMEDIATE_MODEL", "gemini-3.5-flash-lite")
+REMEDIATE_MODEL = os.environ.get("REMEDIATE_MODEL", "gemini-3.5-flash-lite") #making changes in the model to fix issue with limit reaching issues
  
 REMEDIATE_SYSTEM_PROMPT = """You are the remediation agent for a self-healing data pipeline.
  
