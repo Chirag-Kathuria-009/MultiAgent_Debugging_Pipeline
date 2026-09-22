@@ -54,7 +54,8 @@ def clear_task_instance(dag_id: str, run_id: str, task_id: str) -> str:
         "include_subdags": False,
         "include_parentdag": False,
         "task_ids": [task_id],
-        "dag_run_id": run_id
+        "dag_run_id": run_id,
+        "reset_dag_runs": True
     }
     try:
             

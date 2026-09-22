@@ -41,7 +41,8 @@ from db_conn import get_db_connection  # confirm this matches the function name 
 def call_flaky_upstream(**context):
     armed = str(Variable.get("upstream_timeout_active", default_var="false")).lower() == "true"
     try_number = context["ti"].try_number
-
+    print(f"[call_flaky_upstream] task's own try_number={try_number}, armed={armed}")
+    
     if armed and try_number == 1:
         raise AirflowException(
             "Upstream service timeout: connection to partner-api.example.internal "

@@ -1,5 +1,6 @@
 import os
 from typing import Literal
+import time
 
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -43,6 +44,7 @@ def get_remediation_llm():
     return llm.with_structured_output(RemediationProposal)
 
 def remediate_agent(state: AgentState)->dict:
+    print(f"[remediate] ENTERED at {time.time()}")
     log = list(state.get("agent_log", []))
     failure_context = state.get("failure_context", {})
     
@@ -70,8 +72,8 @@ def remediate_agent(state: AgentState)->dict:
         action_description = f"Error during remediation LLM invocation: {e}. Defaulting to escalate."
     
     log.append(f"[remediate] proposed action: {action_type} with description: {action_description}")
-    print(action_type)
-    print(action_description)
+    #print(action_type)
+    #print(action_description)
     risk = assess_risk(action_type)
     allowed = is_allowed(triage_category, action_type,try_number)
     auto_executed = False
@@ -83,8 +85,12 @@ def remediate_agent(state: AgentState)->dict:
             run_id = failure_context.get("run_id"),
             task_id = failure_context.get("task_id"),
         )
-        auto_executed = True
-        log.append(f"[remediate] automatically executed action: {action_type}")
+        if result.startswith("cleared"):
+            auto_executed = True
+            log.append(f"[remediate] automatically executed action: {action_type} — {result}")
+        else:
+            auto_executed = False
+            log.append(f"[remediate] attempted retry but it did NOT succeed: {result}")
     else:
          log.append(
             f"[remediate] NOT auto-executed (allowed={allowed}, risk={risk}) — needs human approval"
