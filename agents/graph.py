@@ -15,7 +15,9 @@ from agents.state import AgentState
 from agents.triage_agent import triage_agent
 from agents.investigate import investigate_agent
 from agents.remediate import remediate_agent
-import time 
+from langgraph.types import interrupt, Command
+import time
+from tools.airflow_api import clear_task_instance
 
 def triage_node(state: AgentState) -> dict:
     """
@@ -66,7 +68,52 @@ def route_after_remediate(state: AgentState) -> str:
     else:
         return "triage_node"""
     
-    return "report_node"  # Placeholder logic for now
+    return "auto_executed" if state.get("auto_executed") else "needs_approval"  # Placeholder logic for now
+
+# addition of new node for handling human approval
+def approval_node(state: AgentState) -> dict:
+    log = list(state.get("agent_log",[]))
+    failure_context = state.get("failure_context",{})
+    proposed_action = state.get("proposed_action","")
+    action_type = proposed_action.split(":", 1)[0].strip() if proposed_action else "unknown"
+    
+    decision = interrupt({
+        "question": "Do you approve the proposed remediation?",
+        "context": failure_context,
+        "triage_category": state.get("triage_category"),
+        "investigation_findings": state.get("investigation_findings"),
+        "proposed_action": proposed_action,
+        "action_type": action_type,
+        "risk_level": state.get("risk_level"),
+    })
+    
+    decision = (decision or {}).get("decision", "reject")
+    log.append(f"[approval] human decision received: {decision}")
+ 
+    if decision == "approve" and action_type == "retry":
+        result = clear_task_instance(
+            dag_id=failure_context.get("dag_id"),
+            run_id=failure_context.get("run_id"),
+            task_id=failure_context.get("task_id"),
+        )
+        log.append(f"[approval] approved action executed: {result}")
+        approval_status = "approved"
+    elif decision == "approve":
+        # Approved, but "escalate" (or anything else) isn't something
+        # this system can execute automatically. Approval here means
+        # "a human has reviewed and acknowledged this," not "and it ran."
+        log.append(f"[approval] approved (acknowledged) — no automatic action exists for '{action_type}'")
+        approval_status = "approved"
+    else:
+        log.append("[approval] rejected — no action taken")
+        approval_status = "rejected"
+ 
+    print(log[-1])
+ 
+    return {
+        "approval_status": approval_status,
+        "agent_log": log,
+    }
 
 def build_graph(checkpointer) -> StateGraph:
     """
@@ -78,16 +125,22 @@ def build_graph(checkpointer) -> StateGraph:
     graph.add_node("investigate_node", investigate_node)
     graph.add_node("remediate_node", remediate_node)
     graph.add_node("report_node", report_node)
-
+    graph.add_node("approval_node", approval_node)
     graph.add_edge(START, "triage_node")
     graph.add_edge("triage_node", "investigate_node")
     graph.add_edge("investigate_node", "remediate_node")
+    graph.add_edge("approval_node", "report_node")
     graph.add_conditional_edges(
         "remediate_node",
         route_after_remediate,
-        {"report_node": "report_node"},
+        {
+            "auto_executed": "report_node",
+            "needs_approval": "approval_node"
+        }
     )
     graph.add_edge("report_node", END)
+    
+    
 
     return graph.compile(checkpointer=checkpointer)
 
