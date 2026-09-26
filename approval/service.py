@@ -87,6 +87,7 @@ def trigger_diagnosis(payload: FailurePayload):
  
     result = graph_state["graph"].invoke(initial_state, config={"configurable": {"thread_id": thread_id}})
     print(f"[DEBUG] raw graph result keys: {list(result.keys())}")
+    print(f"[debug] investigation_findings: {result.get('investigation_findings')}")
     
     if "__interrupt__" in result:
         interrupt_payload = result["__interrupt__"][0].value
@@ -157,6 +158,7 @@ function escapeHtml(s) {
 async function fetchPending() {
   const res = await fetch('/pending-approvals');
   const data = await res.json();
+  console.log("Fetched pending approvals:", data);
   render(data.pending || {});
 }
  
@@ -171,7 +173,8 @@ function render(pending) {
 }
  
 function cardHtml(threadId, payload) {
-  const fc = payload.failure_context || {};
+    console.log("Rendering card for threadId:", threadId, "payload:", payload);
+  const fc = payload.context || {};
   const risk = (payload.risk_level || '').toLowerCase();
   const riskClass = risk === 'high' ? 'risk-high' : 'risk-low';
   return `

@@ -1,0 +1,17 @@
+Incident report: schema_drift_dag.read_orders_table
+Run: manual__2026-09-26T13:38:59.190519+00:00 (attempt 2)
+Generated: 2026-09-26T13:39:53.125661+00:00
+
+Failure: column "customer_id" does not exist
+LINE 1: SELECT customer_id, product_sku, amount FROM orders_drifted ...
+               ^
+
+
+Triage: schema_drift — The exception message explicitly states that the column 'customer_id' does not exist, which indicates a mismatch between the expected schema and the actual database table structure.
+
+Investigation findings: Based on the failure context and the exception message `column "customer_id" does not exist` from the query `SELECT customer_id, product_sku, amount FROM orders_drifted`, the root cause is confirmed to be **schema drift**. The task `read_orders_table` is querying a column (`customer_id`) that no longer exists or has been renamed/removed in the underlying `orders_drifted` table.
+
+Proposed action: escalate: We must escalate this failure because schema drift requires manual intervention to update the query to match the current table structure.
+Risk level: high
+
+Outcome: Remediated after human approval.

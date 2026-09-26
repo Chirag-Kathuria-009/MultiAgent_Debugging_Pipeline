@@ -36,7 +36,15 @@ not call any more tools once you're giving your final answer.
 
    
 
-
+def _extract_text(content) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            parts.append(block.get("text", "") if isinstance(block, dict) else str(block))
+        return "".join(parts)
+    return str(content)
 
 def investigate_agent(state: AgentState) -> dict:
     log = list(state.get("agent_log", []))
@@ -78,7 +86,7 @@ def investigate_agent(state: AgentState) -> dict:
             messages.append(response)
             
             if not response.tool_calls:
-                findings = response.content
+                findings = _extract_text(response.content)
                 break
             print(f"Tool calls: {response.tool_calls}")
             
@@ -94,7 +102,7 @@ def investigate_agent(state: AgentState) -> dict:
  
                 messages.append(ToolMessage(content=str(result), tool_call_id=tool_call["id"]))
         else:
-            findings = findings = (
+            findings = (
                 f"Investigation stopped after {MAX_ITERATIONS} tool calls without a "
                 f"conclusive answer. Evidence gathered: {evidence}"
             )

@@ -18,6 +18,7 @@ from agents.remediate import remediate_agent
 from langgraph.types import interrupt, Command
 import time
 from tools.airflow_api import clear_task_instance
+from agents.report import report_agent
 
 def triage_node(state: AgentState) -> dict:
     """
@@ -54,9 +55,10 @@ def remediate_node(state: AgentState) -> dict:
 
 def report_node(state: AgentState) -> dict:
     log = list(state.get("agent_log", []))
-    log.append("[report] placeholder — no real report yet")
+    result = report_agent(state)
+    log.extend(result["agent_log"])
     print(log[-1])
-    return {"incident_summary": "placeholder", "agent_log": log}
+    return result
 
 
 def route_after_remediate(state: AgentState) -> str:
